@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Agent Chat — демо</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <main class="demo-page">
+      <header class="demo-header">
+        <p class="demo-badge">Демо-страница</p>
+        <h1>Чат с AI-агентом</h1>
+        <p class="demo-lead">
+          Виджет в правом нижнем углу — по образцу Jivo: кнопка-бабл, окно с оператором,
+          статус «онлайн» и переписка. Ответы пока имитируются на фронтенде (mock).
+        </p>
+      </header>
+      <section class="demo-cards" aria-label="Возможности виджета">
+        <article class="demo-card">
+          <h2>Быстрые ответы</h2>
+          <p>Подсказки-кнопки под приветствием ускоряют старт диалога.</p>
+        </article>
+        <article class="demo-card">
+          <h2>Индикатор набора</h2>
+          <p>Пока «агент» думает, отображаются анимированные точки.</p>
+        </article>
+        <article class="demo-card">
+          <h2>Готово к API</h2>
+          <p>Замените <code>sendToAgent</code> в <code>js/chatWidget.js</code> на вызов бэкенда.</p>
+        </article>
+      </section>
+    </main>
+
+    <div id="chat-widget-root"></div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
