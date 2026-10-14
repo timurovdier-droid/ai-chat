@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "vercel:deploy": "vercel deploy --prod"
+  },
+  "devDependencies": {
+    "vercel": "^39.4.2"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
