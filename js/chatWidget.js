@@ -1,10 +1,7 @@
-import {
-  MOCK_AGENT,
-  MOCK_WELCOME,
-  MOCK_HISTORY,
-  MOCK_AI_REPLIES,
-  MOCK_DEFAULT_REPLY,
-} from "./mockData.js";
+import { MOCK_AGENT, MOCK_WELCOME, MOCK_HISTORY } from "./mockData.js";
+import { createVoiceInput, isVoiceInputSupported } from "./voiceInput.js";
+
+const CHAT_API_URL = "/api/chat";
 
 function uid() {
   return `m-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -21,25 +18,32 @@ function formatTime(iso) {
   }
 }
 
-function pickMockReply(userText) {
-  const hit = MOCK_AI_REPLIES.find((r) => r.match.test(userText));
-  return hit ? hit.text : MOCK_DEFAULT_REPLY;
-}
-
-function randomDelay() {
-  const { min, max } = MOCK_AGENT.responseDelayMs;
-  return min + Math.random() * (max - min);
-}
-
 /**
- * Замените на fetch/WebSocket к вашему AI-бэкенду.
  * @param {string} text
  * @param {{ messages: { role: string; text: string }[] }} context
  * @returns {Promise<string>}
  */
 export async function sendToAgent(text, context) {
-  await new Promise((r) => setTimeout(r, randomDelay()));
-  return pickMockReply(text);
+  const res = await fetch(CHAT_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: text,
+      messages: context.messages,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.error || `Ошибка сервера (${res.status})`);
+  }
+
+  if (!data.reply) {
+    throw new Error("Пустой ответ сервера.");
+  }
+
+  return data.reply;
 }
 
 export function createChatWidget(rootEl) {
@@ -91,11 +95,18 @@ export function createChatWidget(rootEl) {
               autocomplete="off"
             ></textarea>
           </label>
+          <button type="button" class="jivo-mic" id="jivo-mic" aria-label="Голосовой ввод" title="Голосовой ввод" aria-pressed="false">
+            <svg class="jivo-mic__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
+              <path d="M19 11a7 7 0 0 1-14 0"/>
+              <path d="M12 18v3"/>
+            </svg>
+          </button>
           <button type="submit" class="jivo-send" id="jivo-send" aria-label="Отправить" disabled>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.6 21 12 3.4 3.4l2.8 7.2L17 12l-10.8 1.4-2.8 7.2z"/></svg>
           </button>
         </form>
-        <p class="jivo-powered">Работает на AI · демо без бэкенда</p>
+        <p class="jivo-powered">Ответы генерирует Google Gemini</p>
       </footer>
     </div>
     <button type="button" class="jivo-launcher" id="jivo-launcher" aria-expanded="false" aria-controls="jivo-panel">
@@ -119,6 +130,7 @@ export function createChatWidget(rootEl) {
   const form = widget.querySelector("#jivo-form");
   const input = widget.querySelector("#jivo-input");
   const sendBtn = widget.querySelector("#jivo-send");
+  const micBtn = widget.querySelector("#jivo-mic");
   const badge = widget.querySelector("#jivo-badge");
   const minimizeBtn = widget.querySelector("#jivo-minimize");
 
@@ -192,9 +204,56 @@ export function createChatWidget(rootEl) {
     scrollToBottom();
   }
 
+  function resizeInput() {
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+  }
+
   function updateSendState() {
     const hasText = input.value.trim().length > 0;
-    sendBtn.disabled = !hasText || isTyping;
+    sendBtn.disabled = !hasText || isTyping || voice.listening();
+    micBtn.disabled = isTyping;
+  }
+
+  function setListeningUi(on) {
+    micBtn.classList.toggle("jivo-mic--live", on);
+    micBtn.setAttribute("aria-pressed", String(on));
+    micBtn.title = on ? "Остановить запись" : "Голосовой ввод";
+    micBtn.setAttribute("aria-label", on ? "Остановить запись" : "Голосовой ввод");
+    input.placeholder = on ? "Говорите…" : "Напишите сообщение…";
+  }
+
+  const voice = createVoiceInput({
+    lang: "ru-RU",
+    onStart() {
+      setListeningUi(true);
+      updateSendState();
+    },
+    onInterim(text) {
+      input.value = text;
+      resizeInput();
+      updateSendState();
+    },
+    onFinal(text) {
+      input.value = text;
+      resizeInput();
+      updateSendState();
+      form.requestSubmit();
+    },
+    onEnd() {
+      setListeningUi(false);
+      updateSendState();
+    },
+    onError(message) {
+      setListeningUi(false);
+      updateSendState();
+      pushAgentMessage(message);
+    },
+  });
+
+  if (!isVoiceInputSupported()) {
+    micBtn.title = "Голосовой ввод недоступен в этом браузере";
+    micBtn.setAttribute("aria-label", "Голосовой ввод недоступен в этом браузере");
   }
 
   function setOpen(open) {
@@ -202,6 +261,9 @@ export function createChatWidget(rootEl) {
     panel.hidden = !open;
     launcher.setAttribute("aria-expanded", String(open));
     launcher.classList.toggle("jivo-launcher--open", open);
+    if (!open) {
+      voice.stop({ send: false });
+    }
     if (open) {
       badge.hidden = true;
       if (!welcomeShown) {
@@ -234,6 +296,7 @@ export function createChatWidget(rootEl) {
     const trimmed = text.trim();
     if (!trimmed || isTyping) return;
 
+    voice.stop({ send: false });
     renderQuickReplies([]);
     pushUserMessage(trimmed);
     input.value = "";
@@ -250,9 +313,13 @@ export function createChatWidget(rootEl) {
       const reply = await sendToAgent(trimmed, context);
       setTyping(false);
       pushAgentMessage(reply);
-    } catch {
+    } catch (err) {
       setTyping(false);
-      pushAgentMessage("Не удалось получить ответ. Попробуйте ещё раз чуть позже.");
+      const hint =
+        err instanceof Error && err.message
+          ? err.message
+          : "Не удалось получить ответ. Попробуйте ещё раз чуть позже.";
+      pushAgentMessage(hint);
     }
     updateSendState();
   }
@@ -267,9 +334,16 @@ export function createChatWidget(rootEl) {
     handleSend(input.value);
   });
 
+  micBtn.addEventListener("click", () => {
+    if (!isVoiceInputSupported()) {
+      pushAgentMessage("Голосовой ввод работает в Chrome и Edge. Откройте чат в одном из этих браузеров.");
+      return;
+    }
+    voice.toggle();
+  });
+
   input.addEventListener("input", () => {
-    input.style.height = "auto";
-    input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+    resizeInput();
     updateSendState();
   });
 

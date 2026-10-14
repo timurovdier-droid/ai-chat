@@ -18,8 +18,9 @@
         <p class="demo-badge">Демо-страница</p>
         <h1>Чат с AI-агентом</h1>
         <p class="demo-lead">
-          Виджет в правом нижнем углу — по образцу Jivo: кнопка-бабл, окно с оператором,
-          статус «онлайн» и переписка. Ответы пока имитируются на фронтенде (mock).
+          Виджет в правом нижнем углу — по образцу Jivo. Ответы генерирует агент на
+          <strong>Google Gemini</strong> через бэкенд: скопируйте <code>.env.example</code> в
+          <code>.env</code>, укажите <code>GEMINI_API_KEY</code> и запустите <code>npm start</code>.
         </p>
       </header>
       <section class="demo-cards" aria-label="Возможности виджета">
@@ -32,8 +33,8 @@
           <p>Пока «агент» думает, отображаются анимированные точки.</p>
         </article>
         <article class="demo-card">
-          <h2>Готово к API</h2>
-          <p>Замените <code>sendToAgent</code> в <code>js/chatWidget.js</code> на вызов бэкенда.</p>
+          <h2>Голосовой ввод</h2>
+          <p>Кнопка микрофона в поле чата. Chrome или Edge, доступ к микрофону.</p>
         </article>
       </section>
     </main>

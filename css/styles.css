@@ -476,6 +476,50 @@ body {
   background: #fff;
 }
 
+.jivo-mic {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--jivo-border);
+  border-radius: 12px;
+  color: var(--jivo-green-dark);
+  background: #f9fafb;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.jivo-mic:hover:not(:disabled) {
+  background: var(--jivo-user-bg);
+  border-color: #b8e6d4;
+}
+
+.jivo-mic:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.jivo-mic--live {
+  color: #fff;
+  background: #ef4444;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.22);
+  animation: jivo-mic-pulse 1.2s ease infinite;
+}
+
+@keyframes jivo-mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.08);
+  }
+}
+
 .jivo-send {
   flex-shrink: 0;
   display: flex;

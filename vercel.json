@@ -1,0 +1,5 @@
+{
+  "version": 2,
+  "name": "ai-chat",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+}
